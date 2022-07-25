@@ -121,32 +121,97 @@ function fromJSON(proto, json) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  res: [],
+
+  stringify() {
+    if (this.combivalue) return this.combivalue;
+    let value = '';
+    if (this.tagvalue) value += this.tagvalue;
+    if (this.idvalue) value += this.idvalue;
+    if (this.classvalue) value += this.classvalue;
+    if (this.attrvalue) value += this.attrvalue;
+    if (this.psClassvalue) value += this.psClassvalue;
+    if (this.psElvalue) value += this.psElvalue;
+    return value;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    const el = { ...this };
+    if (el.tagvalue) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+    if (
+      el.idvalue !== undefined
+      || el.classvalue !== undefined
+      || el.attrvalue !== undefined
+      || el.psClassvalue !== undefined
+      || el.psElvalue !== undefined
+    ) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    el.tagvalue = value;
+    return el;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const el = { ...this };
+    if (el.idvalue) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+    if (
+      el.classvalue !== undefined
+      || el.attrvalue !== undefined
+      || el.psClassvalue !== undefined
+      || el.psElvalue !== undefined
+    ) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    el.idvalue = `#${value}`;
+    return el;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const el = { ...this };
+    el.level = [...this.res];
+    if (el.attrvalue !== undefined || el.psClassvalue !== undefined || el.psElvalue !== undefined) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    el.classvalue = el.classvalue ? `${el.classvalue}.${value}` : `.${value}`;
+    return el;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const el = { ...this };
+    if (el.psClassvalue !== undefined || el.psElvalue !== undefined) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    el.attrvalue = el.attrvalue ? `${el.attrvalue}[${value}]` : `[${value}]`;
+    return el;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const el = { ...this };
+    if (el.psElvalue !== undefined) {
+      throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    }
+    el.psClassvalue = el.psClassvalue ? `${el.psClassvalue}:${value}` : `:${value}`;
+    return el;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    const el = { ...this };
+    if (el.psElvalue) {
+      throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+    }
+    el.psElvalue = `::${value}`;
+    return el;
+  },
+
+  combine(selector1, combinator, selector2) {
+    const el = { ...this };
+    const result = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    el.combivalue = el.combivalue ? el.combivalue + result : result;
+    return el;
   },
 };
 
